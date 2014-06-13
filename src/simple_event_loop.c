@@ -99,7 +99,6 @@ int event_register(event_loop *loop, event *ev)
 {
     int ret;
     const event_op *api = loop->api;
-    event *e;
 
     assert(api != NULL);
 
