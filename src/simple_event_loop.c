@@ -117,6 +117,7 @@ int event_register(event_loop *loop, event *ev)
     {
         return -1;
     }
+
     loop->registered_events[ev->event_fd] = *ev;
     return 0;
 }
@@ -147,13 +148,13 @@ int event_loop_resize(event_loop *loop, int set_size)
         return -1;
     }
 
-    registered = (event *)realloc(loop->registered_events, set_size);
+    registered = (event *)realloc(loop->registered_events, sizeof(event) * set_size);
     if(registered == NULL)
     {
         LOG("malloc");
         return -1;
     }
-    ready = (event *)realloc(loop->ready_events, set_size);
+    ready = (event *)realloc(loop->ready_events, sizeof(event) * set_size);
     if(ready == NULL)
     {
         LOG("realloc");
@@ -171,6 +172,7 @@ int event_loop_resize(event_loop *loop, int set_size)
     loop->registered_events = registered;
     loop->ready_events = ready;
     loop->set_size = set_size;
+    return 0;
 }
 
 void event_loop_main(event_loop *loop)
