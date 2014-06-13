@@ -51,6 +51,7 @@ int main(void)
 	loop = event_loop_create();
 	int ret2 = event_loop_init(loop);
 	printf("%d", ret2);
+	printf("%s\n", loop->api->name);
 	e = event_create();
 	event_set(e, listenfd, EVENT_READ, Accept, NULL);
 

@@ -10,6 +10,7 @@ int epoll_main(event_loop *loop);
 
 event_op epoll_api = 
 {
+    "epoll",
     &epoll_init,
     &epoll_register,
     &epoll_unregister,

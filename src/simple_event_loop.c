@@ -8,10 +8,8 @@ extern const event_op epoll_api;
 extern const event_op kqueue_api;
 #endif
 
-#if 0
 #ifdef EVENT_HAVE_SELECT
 extern const event_op select_api;
-#endif
 #endif
 
 const event_op *event_ops[] =
@@ -24,10 +22,8 @@ const event_op *event_ops[] =
     &kqueue_api,
 #endif
 
-#if 0
 #ifdef EVENT_HAVE_SELECT
     &select_api,
-#endif
 #endif
 
     NULL

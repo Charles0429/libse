@@ -20,11 +20,12 @@ struct event_loop;
  */
 typedef struct event_op
 {
-     int (*event_loop_init)(struct event_loop *);
-     int (*event_register)(struct event_loop *, int, short);
-     int (*event_unregister)(struct event_loop *,int, short);
-     int (*event_loop_resize)(struct event_loop *, int);
-     int (*event_loop_main)(struct event_loop *);
+    const char *name; 
+    int (*event_loop_init)(struct event_loop *);
+    int (*event_register)(struct event_loop *, int, short);
+    int (*event_unregister)(struct event_loop *,int, short);
+    int (*event_loop_resize)(struct event_loop *, int);
+    int (*event_loop_main)(struct event_loop *);
 }event_op;
 
 /**
