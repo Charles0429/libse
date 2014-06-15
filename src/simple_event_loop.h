@@ -12,7 +12,7 @@
 
 
 #define EVENT_LOOP_INITIAL_SIZE 256
-#define EVENT_LOOP_MAX_SIZE 4096
+#define EVENT_LOOP_MAX_SIZE 2560000
 
 struct event_loop;
 /**
