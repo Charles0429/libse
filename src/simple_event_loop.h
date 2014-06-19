@@ -41,6 +41,7 @@ typedef struct event_loop
     struct event *ready_events;
     struct list_head timeout_queue;
     int stop;
+    event_log *log;
 }event_loop;
 
 /*event loop interfaces*/

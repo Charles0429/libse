@@ -37,7 +37,7 @@ int select_init(event_loop *loop)
     api_data = (select_api_data *)malloc(sizeof(select_api_data));
     if(api_data == NULL)
     {
-        LOG("malloc");
+        event_log_debug3(loop->log, EMERG, "select_init:%s, file:%s, line:%d\n", strerror(errno), __FILE__, __LINE__);
         return -1;
     }
 

@@ -31,14 +31,14 @@ int epoll_init(event_loop *loop)
     api_data = (epoll_api_data *)malloc(sizeof(epoll_api_data));
     if(api_data == NULL)
     {
-        LOG("malloc"); 
+        event_log_debug3(loop->log, EMERG, "epoll_init:%s, file:%s, line:%d\n", strerror(errno), __FILE__, __LINE__);
         return -1;
     }
 
     api_data->events = (struct epoll_event *)malloc(sizeof(struct epoll_event) * loop->set_size);
     if(api_data == NULL)
     {
-        LOG("malloc");
+        event_log_debug3(loop->log, EMERG, "epoll_init:%s, file:%s, line:%d\n", strerror(errno), __FILE__, __LINE__);
         free(api_data);
         return -1;
     }
@@ -46,7 +46,7 @@ int epoll_init(event_loop *loop)
     api_data->epfd = epoll_create(1024);
     if(api_data->epfd == -1)
     {
-        LOG("epoll_create");
+        event_log_debug3(loop->log, EMERG, "epoll_init:%s, file:%s, line:%d\n", strerror(errno), __FILE__, __LINE__);
         free(api_data->events);
         free(api_data);
         return -1;
@@ -76,7 +76,7 @@ int epoll_register(event_loop *loop, int fd,  short type)
     ret = epoll_ctl(api_data->epfd, EPOLL_CTL_ADD, fd, &event);
     if(ret == -1)
     {
-        LOG("epoll_ctl");
+        event_log_debug3(loop->log, EMERG, "epoll_register:%s, file:%s, line:%d\n", strerror(errno), __FILE__, __LINE__);
         return -1;
     }
 
@@ -103,7 +103,7 @@ int epoll_unregister(event_loop *loop, int fd, short type)
     ret = epoll_ctl(api_data->epfd, EPOLL_CTL_DEL, fd, &event);
     if(ret == -1)
     {
-        LOG("epoll_ctl");
+        event_log_debug3(loop->log, EMERG, "epoll_unregister:%s, file:%s, line:%d\n", strerror(errno), __FILE__, __LINE__);
         return -1;
     }
     return 0;

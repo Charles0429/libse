@@ -48,21 +48,32 @@ int event_loop_init(event_loop *loop)
     int i;
     int ret;
     const event_op *api = NULL;
+    event_log *log;
     
     loop->set_size = EVENT_LOOP_INITIAL_SIZE;
     loop->max_size = EVENT_LOOP_MAX_SIZE;
 
+    log = event_log_create();
+    if(log == NULL)
+    {
+        LOG("event_log_create");
+        return -1;
+    }
+    event_log_init(log, PATH_DEFAULT, writer_default, LEVEL_DEFAULT);
+
     loop->registered_events = (event *)malloc(sizeof(event) * loop->set_size);
     if(NULL == loop->registered_events)
     {
-        LOG("malloc");
+        event_log_debug3(log, EMERG, "loop init:%s, file:%s, line:%d\n", strerror(errno), __FILE__, __LINE__);
+        event_log_destroy(log);
         return -1;
     }
 
     loop->ready_events = (event *)malloc(sizeof(event) * loop->set_size);
     if(NULL == loop->ready_events)
     {
-        LOG("malloc");
+        event_log_debug3(log, EMERG, "loop init:%s, file:%s, line:%d\n", strerror(errno), __FILE__, __LINE__);
+        event_log_destroy(log);
         free(loop->registered_events);
         return -1;
     }
@@ -77,6 +88,10 @@ int event_loop_init(event_loop *loop)
     }
     else
     {
+        free(loop->registered_events);
+        free(loop->ready_events);
+        event_log_debug3(log, EMERG, "loop init:%s, file:%s, line:%d\n", strerror(errno), __FILE__, __LINE__);
+        event_log_destroy(log);
         return -1;
     }
 
@@ -139,20 +154,20 @@ int event_loop_resize(event_loop *loop, int set_size)
     if(set_size > loop->max_size)
     {
         errno = ERANGE;
-        LOG("loop set size");
+        event_log_debug3(loop->log, EMERG, "%s,%s,%d", strerror(errno), __FILE__, __LINE__);
         return -1;
     }
 
     registered = (event *)realloc(loop->registered_events, sizeof(event) * set_size);
     if(registered == NULL)
     {
-        LOG("malloc");
+        event_log_debug3(loop->log, EMERG, "event_loop_resize:%s, file:%s, line:%d\n", strerror(errno), __FILE__, __LINE__);
         return -1;
     }
     ready = (event *)realloc(loop->ready_events, sizeof(event) * set_size);
     if(ready == NULL)
     {
-        LOG("realloc");
+        event_log_debug3(loop->log, EMERG, "event_loop_resize:%s, file:%s, line:%d\n", strerror(errno), __FILE__, __LINE__);
         return -1;
     }
 
@@ -160,7 +175,7 @@ int event_loop_resize(event_loop *loop, int set_size)
     if(ret == -1)
     {
         /*realloc does not need free here*/
-        LOG("realloc");
+        event_log_debug3(loop->log, EMERG, "event_loop_resize:%s, file:%s, line:%d\n", strerror(errno), __FILE__, __LINE__);
         return -1;
     }
 
