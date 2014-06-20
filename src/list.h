@@ -127,7 +127,7 @@ static inline int list_empty(const struct list_head *head)
     (list_empty(list_ptr)? NULL : list_first_entry(list_ptr, type, member))
 
 #define list_next_entry(elem_ptr, member) \
-    list_entry((elem_ptr)->member.next, typeof(*(elem_ptr)), member);
+    list_entry((elem_ptr)->member.next, typeof(*(elem_ptr)), member)
 
 #define list_prev_entry(elem_ptr, member) \
     list_entry((elem_ptr)->member.prev, typeof(*(elem_ptr)), member)
@@ -146,12 +146,12 @@ static inline int list_empty(const struct list_head *head)
 
 #define list_for_each_entry(elem_ptr, head, member) \
     for(elem_ptr = list_first_entry(head, typeof(*elem_ptr), member); \
-        &(elem_ptr->member) != head; \
+        &(elem_ptr->member) != (head); \
         elem_ptr = list_next_entry(elem_ptr, member))
 
 #define list_for_entry_reverse(elem_ptr, head, member) \
     for (elem_ptr = list_last_entry(head, typeof(*elem_ptr), member); \
-         &(elem_ptr->member) != head; \
+         &(elem_ptr->member) != (head); \
          elem_ptr = list_prev_entry(elem_ptr, member))
 
 #define list_prepare_entry(elem_ptr, list_ptr, member) \
