@@ -6,7 +6,7 @@ int epoll_init(event_loop *loop);
 int epoll_register(event_loop *loop, int fd,  short type);
 int epoll_unregister(event_loop *loop, int fd, short type);
 int epoll_resize(event_loop *loop, int set_size);
-int epoll_main(event_loop *loop);
+int epoll_main(event_loop *loop, int64_t timeout);
 
 event_op epoll_api = 
 {
@@ -126,7 +126,7 @@ int epoll_resize(event_loop *loop, int set_size)
     }
 }
 
-int epoll_main(event_loop *loop)
+int epoll_main(event_loop *loop, int64_t timeout)
 {
     epoll_api_data *api_data = loop->api_data;
     int ret;
@@ -134,7 +134,7 @@ int epoll_main(event_loop *loop)
     int events_num;
 
     ret = epoll_wait(api_data->epfd, api_data->events,
-                     loop->set_size, -1);
+                     loop->set_size, timeout);
 
     events_num = ret;
     for(i = 0; i < events_num; i++)

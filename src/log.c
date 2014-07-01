@@ -49,7 +49,7 @@ void event_log_close(event_log *log)
     close(log->fd);
 }
 
-void event_log_destory(event_log *log)
+void event_log_destroy(event_log *log)
 {
     event_log_close(log);
     free(log);

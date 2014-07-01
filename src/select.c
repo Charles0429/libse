@@ -17,7 +17,7 @@ int select_init(event_loop *);
 int select_register(event_loop *, int, short);
 int select_unregister(event_loop *, int, short);
 int select_resize(event_loop *, int);
-int select_main(event_loop *);
+int select_main(event_loop *, int64_t timeout);
 
 const struct event_op select_api = 
 {
@@ -124,13 +124,15 @@ int select_resize(event_loop *loop, int set_size)
     return 0;
 }
 
-int select_main(event_loop *loop)
+int select_main(event_loop *loop, int64_t timeout)
 {
     select_api_data *api_data = loop->api_data;
     int ret;
     int events_num;
     int nfds;
     int i;
+    struct timeval tv;
+    struct timeval *t = &tv;
 
     nfds = api_data->max_read_fd > api_data->max_write_fd ? 
                api_data->max_read_fd : api_data->max_write_fd;
@@ -139,8 +141,18 @@ int select_main(event_loop *loop)
     api_data->read_sets = api_data->t_read_sets;
     api_data->write_sets = api_data->t_write_sets;
 
+    if(timeout == -1)
+    {
+        t = NULL;
+    }
+    else
+    {
+        miliseconds_to_timeval(timeout, t);
+    }
+
     ret = select(nfds, &api_data->read_sets, &api_data->write_sets, 
-                 NULL, NULL);
+                 NULL, t);
+
     
     events_num = 0;
     for(i = 0; i < nfds; i++)

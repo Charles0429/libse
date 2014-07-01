@@ -9,6 +9,7 @@
 #include "list.h"
 #include "log.h"
 #include "simple_event.h"
+#include "time.h"
 
 
 #define EVENT_LOOP_INITIAL_SIZE 256
@@ -25,7 +26,7 @@ typedef struct event_op
     int (*event_register)(struct event_loop *, int, short);
     int (*event_unregister)(struct event_loop *,int, short);
     int (*event_loop_resize)(struct event_loop *, int);
-    int (*event_loop_main)(struct event_loop *);
+    int (*event_loop_main)(struct event_loop *, int64_t);
 }event_op;
 
 /**
@@ -41,6 +42,7 @@ typedef struct event_loop
     struct event *ready_events;
     struct list_head timeout_queue;
     int stop;
+    int64_t timeout;
     event_log *log;
 }event_loop;
 
@@ -52,5 +54,8 @@ int event_unregister(event_loop *, event *);
 int event_loop_resize(event_loop *, int);
 void event_loop_main(event_loop *);
 void event_loop_destory(event_loop *loop);
+void __process_timeout_events(event_loop *loop);
+void __add_event_to_timeout_queue(event_loop *loop, event *);
+void __get_first_timeout(event_loop *loop);
 
 #endif

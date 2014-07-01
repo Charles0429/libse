@@ -113,23 +113,35 @@ int event_register(event_loop *loop, event *ev)
 
     assert(api != NULL);
 
-    if(ev->event_fd >= loop->set_size)
+    if(ev->event_type & EVENT_TIMEOUT == 0)
     {
-        ret = event_loop_resize(loop, loop->set_size * 2);
+        if(ev->event_fd >= loop->set_size)
+        {
+            ret = event_loop_resize(loop, loop->set_size * 2);
+            if(ret == -1)
+            {
+                return -1;
+            }
+        }
+
+        ret = api->event_register(loop, ev->event_fd, ev->event_type);
         if(ret == -1)
         {
             return -1;
         }
-    }
 
-    ret = api->event_register(loop, ev->event_fd, ev->event_type);
-    if(ret == -1)
+        loop->registered_events[ev->event_fd] = *ev;
+        return 0;
+    }
+    else
     {
-        return -1;
+        int64_t now;
+        
+        now = get_time_miliseconds();
+        ev->timeout += now;
+        __add_event_to_timeout_queue(loop, ev);
+        return 0;
     }
-
-    loop->registered_events[ev->event_fd] = *ev;
-    return 0;
 }
 
 int event_unregister(event_loop *loop, event *ev)
@@ -191,7 +203,19 @@ void event_loop_main(event_loop *loop)
     const event_op *api = loop->api;
     while(!loop->stop)
     {
-        int events_num = api->event_loop_main(loop);
+        uint64_t timeout;
+        __get_first_timeout(loop);
+        timeout = loop->timeout;
+        if(timeout != -1)
+        {
+            timeout -= get_time_miliseconds();
+            if(timeout < 0)
+            {
+                timeout = -1;
+            }
+        }
+
+        int events_num = api->event_loop_main(loop, timeout);
         for(i = 0; i < events_num; i++)
         {
             int fd = loop->ready_events[i].event_fd;
@@ -200,7 +224,7 @@ void event_loop_main(event_loop *loop)
 
             if(r->event_type & EVENT_ERROR)
             {
-                //handle the error
+                //handle the erro
             }
             else if(e->event_type & r->event_type & EVENT_READ)
             {
@@ -211,5 +235,75 @@ void event_loop_main(event_loop *loop)
                 e->event_cb(fd, EVENT_WRITE, e->event_args);
             }
         }
+        __process_timeout_events(loop);
     } 
+}
+
+void __process_timeout_events(event_loop *loop)
+{
+    event *curr, *next;
+    int64_t now;
+    
+    if(list_empty(&loop->timeout_queue))
+    {
+        return;
+    }
+    list_for_each_entry_safe(curr, next, (&(loop->timeout_queue)), timeout_next)
+    {
+        now = get_time_miliseconds();
+        if(curr->timeout <= now)
+        {
+            list_del(&(curr->timeout_next));
+            curr->event_cb(-1, EVENT_TIMEOUT, curr->event_args);
+        }
+        else
+        {
+            break;
+        }
+
+    }
+
+}
+
+void __add_event_to_timeout_queue(event_loop *loop, event *ev)
+{
+    event *p;
+    int flag = 0;
+    
+    if(list_empty(&loop->timeout_queue))
+    {
+        list_add_tail(&ev->timeout_next, &loop->timeout_queue);
+    }
+    else
+    {
+        list_for_each_entry(p, (&(loop->timeout_queue)), timeout_next)
+        {
+            if(p->timeout > ev->timeout)
+            {
+                flag = 1;
+                break;
+            }
+        }
+        if(flag == 0) /*should we insert ev to the tail*/
+        {
+            list_add_tail(&ev->timeout_next, &loop->timeout_queue);
+        }
+        else
+        {
+            list_add_tail(&(ev->timeout_next), &(p->timeout_next));
+        }
+    }
+}
+
+void __get_first_timeout(event_loop *loop)
+{
+    if(list_empty(&loop->timeout_queue))
+    {
+        loop->timeout = -1;
+    }
+    else
+    {
+        event *e = list_first_entry((&(loop->timeout_queue)), event, timeout_next);
+        loop->timeout = e->timeout;
+    }
 }

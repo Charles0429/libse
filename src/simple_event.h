@@ -1,6 +1,7 @@
 #ifndef _SIMPLE_EVENT_H
 #define _SIMPLE_EVENT_H
 
+#include <stdint.h>
 #include <stdlib.h>
 #include "list.h"
 
@@ -23,12 +24,14 @@ typedef struct event
     void *event_args;
     event_callback event_cb;
 
+    int64_t timeout; 
     struct list_head timeout_next;
 }event;
 
 /*event interfaces*/
 event *event_create(void);
-void event_set(struct event *, int, short, event_callback,  void *);
+void event_set(struct event *, int, short, event_callback,void *);
+void event_set_timeout(struct event *, event_callback, void *, int64_t);
 void event_destory(struct event *);
 
 #endif
