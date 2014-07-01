@@ -28,7 +28,7 @@ We use the libevent benchmark program [bench-libevent](http://libev.schmorp.de/b
 #Todo
 
 - add kqueue support
-- add timeout support
+- add evport support
 - etc...
 
 
