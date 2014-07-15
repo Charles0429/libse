@@ -16,6 +16,7 @@ typedef struct select_api_data
 int select_init(event_loop *);
 int select_register(event_loop *, int, short);
 int select_unregister(event_loop *, int, short);
+int select_modify(event_loop *loop, int fd, short type);
 int select_resize(event_loop *, int);
 int select_main(event_loop *, int64_t timeout);
 
@@ -25,6 +26,7 @@ const struct event_op select_api =
     &select_init,
     &select_register,
     &select_unregister,
+    &select_modify,
     &select_resize,
     &select_main
 };
@@ -82,36 +84,121 @@ int select_unregister(event_loop *loop, int fd, short type)
     {
         int max_read_fd = api_data->max_read_fd;
         FD_CLR(fd, &api_data->t_read_sets);
-        for(i = max_read_fd - 1; i >= 0; i--)
+        if(max_read_fd == fd)
         {
-            if(FD_ISSET(i, &api_data->t_read_sets))
+            for(i = max_read_fd; i >= 0; i--)
             {
-                api_data->max_read_fd = i;
-                break;
+                if(FD_ISSET(i, &api_data->t_read_sets))
+                {
+                    api_data->max_read_fd = i;
+                    break;
+                }
+                if(api_data->max_read_fd == max_read_fd)
+                {
+                    api_data->max_read_fd = -1;
+                }
             }
-        }
-        if(api_data->max_read_fd == max_read_fd)
-        {
-            api_data->max_read_fd = -1;
         }
     }
     if(type & EVENT_WRITE)
     {
         int max_write_fd = api_data->max_write_fd;
         FD_CLR(fd, &api_data->t_write_sets);
-        for(i = max_write_fd - 1; i >= 0; i--)
+        if(max_write_fd == fd)
         {
-            if(FD_ISSET(i, &api_data->t_write_sets))
+            for(i = max_write_fd; i >= 0; i--)
             {
-                api_data->max_write_fd = i;
-                break;
+                if(FD_ISSET(i, &api_data->t_write_sets))
+                {
+                    api_data->max_write_fd = i;
+                    break;
+                }
+            }
+            if(api_data->max_write_fd == max_write_fd)
+            {
+                api_data->max_write_fd = -1;
             }
         }
-        if(api_data->max_write_fd == max_write_fd)
+    }
+    return 0;
+}
+
+int select_modify(event_loop *loop, int fd, short type)
+{
+    select_api_data *api_data = loop->api_data;
+    int i;
+
+    if(type & EVENT_READ)
+    {
+        if(!FD_ISSET(fd, &(api_data->t_read_sets)))
         {
-            api_data->max_write_fd = -1;
+            int max_read_fd = api_data->max_read_fd;
+            
+            FD_SET(fd, &(api_data->t_read_sets));
+            if(max_read_fd < fd)
+            {
+                api_data->max_read_fd = fd;
+            }
         }
     }
+    else
+    {
+        if(FD_ISSET(fd, &(api_data->t_read_sets)))
+        {
+            int max_read_fd = api_data->max_read_fd;
+            FD_CLR(fd, &(api_data->t_read_sets));
+            if(max_read_fd == fd)
+            {
+                for(i = max_read_fd; i >= 0; i--)
+                {
+                    if(FD_ISSET(i, &(api_data->t_read_sets)))
+                    {
+                        api_data->max_read_fd = i;
+                        break;
+                    }
+                }
+                if(api_data->max_read_fd == max_read_fd)
+                {
+                    api_data->max_read_fd = -1;
+                }
+            }
+        }
+    }
+
+    if(type & EVENT_WRITE)
+    {
+        if(!FD_ISSET(fd, &(api_data->t_write_sets)))
+        {
+            int max_write_fd = api_data->max_write_fd;
+            if(max_write_fd < fd)
+            {
+                api_data->max_write_fd = fd;
+            }
+        }
+    }
+    else
+    {
+        if(FD_ISSET(fd, &(api_data->t_write_sets)))
+        {
+            int max_write_fd = api_data->max_write_fd;
+            
+            if(max_write_fd == fd)
+            {
+                for(i = max_write_fd; i >= 0; i--)
+                {
+                    if(FD_ISSET(i, &(api_data->t_write_sets)))
+                    {
+                        api_data->max_write_fd = i;
+                    }
+                }
+                if(api_data->max_write_fd == max_write_fd)
+                {
+                    api_data->max_write_fd = -1;
+                }
+            }
+        }
+    }
+
     return 0;
 }
 

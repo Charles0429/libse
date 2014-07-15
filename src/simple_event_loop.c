@@ -109,11 +109,12 @@ int event_loop_init(event_loop *loop)
 int event_register(event_loop *loop, event *ev)
 {
     int ret;
+    int type = ev->event_type;
     const event_op *api = loop->api;
 
     assert(api != NULL);
 
-    if(ev->event_type & EVENT_TIMEOUT == 0)
+    if((type & EVENT_READ) || (type & EVENT_WRITE))
     {
         if(ev->event_fd >= loop->set_size)
         {
@@ -131,31 +132,70 @@ int event_register(event_loop *loop, event *ev)
         }
 
         loop->registered_events[ev->event_fd] = *ev;
-        return 0;
     }
-    else
+    
+    if(type & EVENT_TIMEOUT)
     {
         int64_t now;
         
         now = get_time_miliseconds();
         ev->timeout += now;
         __add_event_to_timeout_queue(loop, ev);
-        return 0;
     }
+
+    return 0;
 }
 
 int event_unregister(event_loop *loop, event *ev)
 {
     int ret;
+    int type = ev->event_type;
     const event_op *api = loop->api;
     
-    ret = api->event_unregister(loop, ev->event_fd, ev->event_type);
-    if(ret == -1)
+    if((type & EVENT_READ) || (type & EVENT_WRITE))
     {
-        return -1;
+        ret = api->event_unregister(loop, ev->event_fd, ev->event_type);
+        if(ret == -1)
+        {
+            return -1;
+        }
     }
-    return 0;
+
+    if(type & EVENT_TIMEOUT)
+    {
+        __del_event_from_timeout_queue(loop, ev);
+    }
     
+    return 0;
+}
+
+int event_modify(event_loop *loop, event *ev)
+{
+    int ret;
+    int type = ev->event_type;
+    const event_op *api = loop->api;
+
+    if(type & EVENT_READ || type & EVENT_WRITE)
+    {
+        ret = api->event_modify(loop, ev->event_fd, ev->event_type);
+        if(ret == -1)
+        {
+            return -1;
+        }
+        
+        loop->registered_events[ev->event_fd] = *ev;
+    }
+    
+    if(type & EVENT_TIMEOUT)
+    {
+        int64_t now;   
+        __del_event_from_timeout_queue(loop, ev);
+        now = get_time_miliseconds();
+        ev->timeout += now;
+        __add_event_to_timeout_queue(loop, ev);
+    } 
+
+    return 0;
 }
 
 int event_loop_resize(event_loop *loop, int set_size)
@@ -293,6 +333,12 @@ void __add_event_to_timeout_queue(event_loop *loop, event *ev)
             list_add_tail(&(ev->timeout_next), &(p->timeout_next));
         }
     }
+}
+
+void __del_event_from_timeout_queue(event_loop *loop, event *ev)
+{
+    assert(loop != NULL && ev != NULL);
+    list_del(&(ev->timeout_next));
 }
 
 void __get_first_timeout(event_loop *loop)

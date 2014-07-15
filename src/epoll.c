@@ -5,6 +5,7 @@
 int epoll_init(event_loop *loop);
 int epoll_register(event_loop *loop, int fd,  short type);
 int epoll_unregister(event_loop *loop, int fd, short type);
+int epoll_modify(event_loop *loop, int fd, short type);
 int epoll_resize(event_loop *loop, int set_size);
 int epoll_main(event_loop *loop, int64_t timeout);
 
@@ -14,6 +15,7 @@ event_op epoll_api =
     &epoll_init,
     &epoll_register,
     &epoll_unregister,
+    &epoll_modify,
     &epoll_resize,
     &epoll_main
 };
@@ -106,6 +108,35 @@ int epoll_unregister(event_loop *loop, int fd, short type)
         event_log_debug3(loop->log, EMERG, "epoll_unregister:%s, file:%s, line:%d\n", strerror(errno), __FILE__, __LINE__);
         return -1;
     }
+    return 0;
+}
+
+int epoll_modify(event_loop *loop, int fd, short type)
+{
+    epoll_api_data *api_data = loop->api_data;
+    struct epoll_event event;
+    int ret;
+
+    event.events = 0;
+    event.data.fd = fd;
+
+    if(type & EVENT_READ)
+    {
+        event.events |= EPOLLIN;
+    }
+    if(type & EVENT_WRITE)
+    {
+        printf("add EVENT_TYPE\n");
+        event.events |= EPOLLOUT;
+    }
+
+    ret = epoll_ctl(api_data->epfd, EPOLL_CTL_MOD, fd, &event);
+    if(ret == -1)
+    {
+        event_log_debug3(loop->log, EMERG, "epoll_modify:%s, file:%s, line:%d\n", strerror(errno), __FILE__, __LINE__);
+        return -1;
+    }
+
     return 0;
 }
 
